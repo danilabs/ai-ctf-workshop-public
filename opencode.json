@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omniroute/opencode-go/deepseek-v4.1-flash",
+  "policies": [
+    { "action": "provider.use", "resource": "*", "effect": "deny" },
+    { "action": "provider.use", "resource": "omniroute", "effect": "allow" }
+  ],
+  "providers": {
+    "omniroute": {
+      "name": "OmniRoute",
+      "env": ["OMNIROUTE_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://ai-router.42security.io/v1",
+        "apiKey": "sk-92b5394e6437da2e-c00ada-c4875eb6"
+      },
+      "models": {
+        "omniroute/opencode-go/deepseek-v4.1-flash": {
+          "name": "DeepSeek V4.1 Flash",
+          "capabilities": {
+            "tools": true,
+            "input": ["text"],
+            "output": ["text"]
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 384000
+          }
+        }
+      }
+    }
+  }
+}
