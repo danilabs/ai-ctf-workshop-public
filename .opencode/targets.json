@@ -1,0 +1,5 @@
+{
+  "_comment": "Hosts the agent may touch. Add an entry only for targets you are authorized to test; keep a note with the authorization reference. A missing file or an empty list means nothing remote is allowed.",
+  "allow": [],
+  "allow_loopback": true
+}

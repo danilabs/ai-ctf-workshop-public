@@ -1,0 +1,221 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // ── Default model ────────────────────────────────────────────────────────
+  // Curated, tool-capable models from the router. The key on the left is the
+  // ID OpenCode uses ("omnirouter/<key>"); "modelID" is what gets sent to the
+  // router. Swap the default freely: omnirouter/kimi-k2-7-code, haiku-5-5…
+  // NOTE: only models verified end to end (tool loop) on 2026-11-14. The
+  // aug/*, zc/*, cxa/* and cfp/* routes of this router were broken at check
+  // time (upstream 502/503), and gpt-6-luna fails on tool-result follow-ups
+  // ([400] Invalid 'input[1].content') — re-test before re-adding them.
+  "model": "omnirouter/beam-free",
+
+  // ── Custom provider (OpenAI-compatible router) ──────────────────────────
+  "providers": {
+    "omnirouter": {
+      "name": "42Security OmniRouter",
+      // The credential comes from the environment, never from this file:
+      //   export OMNIROUTER_API_KEY="sk-..."
+      "env": ["OMNIROUTER_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://ai-router.42security.io/v1"
+      },
+      // The router streams reasoning in "reasoning_content" (visible in raw
+      // responses). Telling OpenCode this keeps multi-turn reasoning intact.
+      "compatibility": {
+        "reasoningField": "reasoning_content"
+      },
+      "models": {
+        // Free default — the OpenCode Go free tier routed through the gateway.
+        // No cost, 200k context, tools + reasoning, verified end to end.
+        "beam-free": {
+          "modelID": "opencode-go/beam-free",
+          "name": "Beam Free (no cost)",
+          "limit": { "context": 200000, "output": 32768 }
+        },
+        // Second free option — useful fallback if Beam is rate limited.
+        "longcat-2-5-free": {
+          "modelID": "opencode-go/longcat-2.5-free",
+          "name": "LongCat 2.5 Free (no cost)",
+          "limit": { "context": 200000, "output": 32768 }
+        },
+        // Optional paid upgrades below (not in the free-tier workshop set).
+        // Fast everyday model — good for recon and quick questions.
+        "haiku-5-5": {
+          "modelID": "opencode-go/claude-haiku-5-5",
+          "name": "Claude Haiku 5.5",
+          "limit": { "context": 1000000, "output": 128000 }
+        },
+        // Balanced default — 1M context, reasoning, tools, vision.
+        // Scope this "balanced" comment to the route, not the model. The
+        // GPT-6 Luna route accepts requests but rejects tool-result
+        // follow-ups, so it is disabled to keep /models safe. Re-test and
+        // remove `disabled` if the router fixes it.
+        "gpt-6-luna": {
+          "modelID": "opencode-go/gpt-6-luna",
+          "name": "GPT-6 Luna (route broken)",
+          "limit": { "context": 1050000, "output": 128000 },
+          "disabled": true
+        },
+        // Long-horizon reasoning for hard challenges.
+        "glm-5-3": {
+          "modelID": "opencode-go/glm-5.3",
+          "name": "GLM 5.3 (free tier)",
+          "limit": { "context": 1000000, "output": 131072 }
+        },
+        // Moonshot Kimi K2.7 Code — exploit scripting, 262K context.
+        "kimi-k2-7-code": {
+          "modelID": "opencode-go/kimi-k2.7-code",
+          "name": "Kimi K2.7 Code",
+          "limit": { "context": 262144, "output": 262144 }
+        },
+        // Qwen 3.8 Flash — open model, 1M context.
+        "qwen3-8-flash": {
+          "modelID": "opencode-go/qwen3.8-flash",
+          "name": "Qwen 3.8 Flash",
+          "limit": { "context": 1000000, "output": 131072 }
+        },
+        // DeepSeek V4.1 Flash — big output budget for long analyses.
+        "deepseek-v4-1-flash": {
+          "modelID": "opencode-go/deepseek-v4.1-flash",
+          "name": "DeepSeek V4.1 Flash (free tier)",
+          "limit": { "context": 1000000, "output": 384000 }
+        }
+      }
+    }
+  },
+
+  // ── Agents ───────────────────────────────────────────────────────────────
+  // This is a skeleton harness: agents and commands are built by the
+  // participant during the workshop (see HARNESS.md steps 3-4). Add your
+  // own entries under "agents" here, and create the matching files under
+  // .opencode/agents/ and .opencode/commands/.
+
+  // Skills are auto-discovered:
+  //   .opencode/skills/ctf-methodology/          workshop overlay (ours)
+  //   .opencode/skills/vendor/ctf-skills/*       ljagiello/ctf-skills (MIT)
+  // No `skills` array is needed — auto-discovery also works from subdirs.
+
+  // ── Permissions ──────────────────────────────────────────────────────────
+  // Base policy is allow-all. For a workshop we keep prompts to a minimum but
+  // hard-deny anything destructive. Tighten with `ask` rules if you prefer.
+  "permissions": [
+    { "action": "*", "resource": "*", "effect": "allow" },
+
+    // Never allow privilege escalation or destructive system commands.
+    { "action": "shell", "resource": "sudo *", "effect": "deny" },
+    { "action": "shell", "resource": "su *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -fr *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -Rf *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -r -f *", "effect": "deny" },
+    { "action": "shell", "resource": "mkfs*", "effect": "deny" },
+    { "action": "shell", "resource": "dd if=* of=/dev/*", "effect": "deny" },
+    { "action": "shell", "resource": "shutdown*", "effect": "deny" },
+    { "action": "shell", "resource": "reboot*", "effect": "deny" },
+    { "action": "shell", "resource": "chmod -R 777 *", "effect": "deny" },
+
+    // `.env` files may hold credentials; let the user decide each time.
+    { "action": "read", "resource": "*.env", "effect": "ask" }
+  ],
+
+  // ── Policies ─────────────────────────────────────────────────────────────
+  // Policies never prompt and cannot be overridden by an "Allow always".
+  // They are the hard floor beneath the permissions above.
+  "policies": [
+    // Never let a model exfiltrate the attendee's own SSH material. Keep this
+    // scoped to .ssh directories: a CTF challenge may legitimately ship a
+    // file called id_rsa that the agent must analyze.
+    { "action": "tool.use", "resource": "read:*/.ssh/*", "effect": "deny" },
+    // Blue-team counterpart: block cloud credential files too.
+    { "action": "tool.use", "resource": "read:*/.aws/credentials", "effect": "deny" },
+    { "action": "tool.use", "resource": "read:*/.config/gcloud/*", "effect": "deny" },
+    // Nothing in a CTF needs privilege escalation.
+    { "action": "tool.use", "resource": "shell:sudo *", "effect": "deny" }
+
+    // Token-saving option: every advertised skill description costs tokens on
+    // every request. To hide skills this workshop will not use, append entries
+    // before the closing bracket (add a comma after the sudo line above):
+    //   { "action": "skill.use", "resource": "ctf-ai-ml", "effect": "deny" },
+    //   { "action": "skill.use", "resource": "ctf-similar-search", "effect": "deny" }
+  ],
+
+  // ── Session behavior tuned for long CTF runs ────────────────────────────
+  "experimental": {
+    // Gives agents a todo list tool — great for multi-step challenge solving.
+    "todo": true,
+    // Summarize long sessions in the background instead of pausing the run.
+    "background_compaction": true
+  },
+
+  // Tool results are shortened in the model context; the complete output is
+  // still kept in a managed file the agent can grep. 2000 lines / 64 KiB is
+  // the sweet spot: enough for nmap/gdb, far cheaper per step than 4000.
+  "tool_output": {
+    "max_lines": 2000,
+    "max_bytes": 65536
+  },
+
+  // Long CTF sessions: compact automatically, keep more recent context than
+  // the 15k default, and start earlier (20% of the window) on big models.
+  "compaction": {
+    "auto": true,
+    "keep": { "tokens": 24000 },
+    "buffer": "20%"
+  },
+
+  // `/undo` restores files as well as conversation (helpers in a Git repo).
+  "snapshots": true,
+
+  // ── CTF-specific behavior ───────────────────────────────────────────────
+  // Off for the workshop: no provider is guaranteed, searches can surface
+  // challenge writeups (spoilers), and the tool schema costs tokens on every
+  // request. `webfetch` and `curl` remain available, so OSINT/recon still
+  // works; `ctf-similar-search` talks to Tavily directly and is unaffected.
+  // To re-enable: set "websearch": { "provider": "random" } and connect a
+  // provider with /connect (or set EXA/FIRECRAWL/TAVILY_API_KEY).
+  "websearch": false,
+
+  // Never auto-format challenge files: a formatter can break payload bytes,
+  // binary-adjacent fixtures and exploit scripts mid-solve.
+  "formatter": false,
+
+  // Ignore build/dependency churn so the file watcher stays quiet during
+  // long solves; `work/` stays watched because exploit scripts change there.
+  "watcher": {
+    "ignore": [
+      "**/node_modules/**",
+      "**/.venv/**",
+      "**/__pycache__/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/target/**"
+    ]
+  },
+
+  // Named read-only access to the vendored playbook tree. The model can list
+  // it and then read a specific category's notes or scripts by path.
+  // (Relative paths resolve from this config file's directory.)
+  "references": {
+    "ctf-skills": {
+      "path": "skills/vendor/ctf-skills",
+      "description": "CTF playbooks, technique references and scripts for every category"
+    }
+  },
+
+  // MCP is optional and costs context, so nothing is connected by default.
+  // Playwright is the most useful one for web challenges: flip `disabled`
+  // to false (and run `npx playwright install chromium`) when you need a
+  // real browser. Tool names become playwright_<tool>.
+  "mcp": {
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "-y", "@playwright/mcp"],
+        "disabled": true
+      }
+    }
+  }
+}

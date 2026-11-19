@@ -1,0 +1,25 @@
+{
+  // Step 2: the smallest config that works. One provider, two free models.
+  // Step 6: add "permissions" and "policies" below, broad allow first.
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omnirouter/beam-free",
+  "providers": {
+    "omnirouter": {
+      "env": ["OMNIROUTER_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://ai-router.42security.io/v1" },
+      "models": {
+        "beam-free": {
+          "modelID": "opencode-go/beam-free",
+          "name": "Beam Free (no cost)",
+          "limit": { "context": 200000, "output": 32768 }
+        },
+        "longcat-2-5-free": {
+          "modelID": "opencode-go/longcat-2.5-free",
+          "name": "LongCat 2.5 Free (no cost)",
+          "limit": { "context": 200000, "output": 32768 }
+        }
+      }
+    }
+  }
+}

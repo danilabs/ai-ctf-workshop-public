@@ -1,0 +1,5 @@
+{
+  "_comment": "Only hosts you are authorized to test. Empty allow = nothing remote is permitted. Add a note with the authorization reference.",
+  "allow": [],
+  "allow_loopback": true
+}
