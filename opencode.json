@@ -15,7 +15,7 @@
         "apiKey": "sk-92b5394e6437da2e-c00ada-c4875eb6"
       },
       "models": {
-        "omniroute/opencode-go/deepseek-v4.1-flash": {
+        "opencode-go/deepseek-v4.1-flash": {
           "name": "DeepSeek V4.1 Flash",
           "capabilities": {
             "tools": true,
